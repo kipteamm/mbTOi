@@ -43,6 +43,25 @@ PDA::PDA(const std::string &file) {
 CFG PDA::toCFG() {
     CFG cfg{};
 
+    cfg.addVariable("S");
+    for (const std::string& q: this->states) {
+        for (const std::string& X: this->stackAlphabet) {
+            for (const std::string& p: this->states) {
+                const std::string variable = "[" + q + X + p + "]";
+                if (cfg.hasVariable(variable)) continue;
+
+                cfg.addVariable(variable);
+            }
+        }
+    }
+
+    for (const std::string& a: this->alphabet) {
+        cfg.addTerminal(a);
+    }
+
+    cfg.addProduction();
+
+    cfg.setStartSymbol("S");
 
     return cfg;
 }

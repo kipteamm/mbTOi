@@ -41,23 +41,45 @@ CFG::CFG(const std::string& file) {
     json data = json::parse(input);
 
     for (const auto& variable: data["Variables"]) {
-        this->variables.insert(variable.get<std::string>());
+        addVariable(variable.get<std::string>());
     }
 
     for (const auto& terminal: data["Terminals"]) {
-        this->terminals.insert(terminal.get<std::string>());
+        addTerminal(terminal.get<std::string>());
     }
 
     for (const auto& production: data["Productions"]) {
-        auto productions = production["body"].get<std::vector<std::string>>();
-        if (productions.empty()) productions.emplace_back("");
-
-        this->productions[production["head"].get<std::string>()].push_back(productions);
+        addProduction(
+            production["head"].get<std::string>(),
+            production["body"].get<std::vector<std::string>>()
+            );
     }
 
     this->startSymbol = data["Start"].get<std::string>();
 }
 
+
+void CFG::addVariable(const std::string &variable) {
+    this->variables.insert(variable);
+}
+
+void CFG::addTerminal(const std::string &terminal) {
+    this->terminals.insert(terminal);
+}
+
+void CFG::addProduction(const std::string &variable, std::vector<std::string> production) {
+    if (production.empty()) production.push_back("");
+    this->productions[variable].push_back(production);
+}
+
+void CFG::setStartSymbol(const std::string &startSymbol) {
+    this->startSymbol = startSymbol;
+}
+
+
+bool CFG::hasVariable(const std::string &variable) const {
+    return this->variables.count(variable);
+}
 
 
 void printSorted(const std::unordered_set<std::string>& s) {

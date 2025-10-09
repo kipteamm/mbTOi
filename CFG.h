@@ -14,6 +14,13 @@ public:
     CFG();
     explicit CFG(const std::string& file);
 
+    void addVariable(const std::string& variable);
+    void addTerminal(const std::string& terminal);
+    void addProduction(const std::string& variable, std::vector<std::string> production);
+    void setStartSymbol(const std::string& startSymbol);
+
+    [[nodiscard]] bool hasVariable(const std::string& variable) const;
+
     void print();
 
 private:
