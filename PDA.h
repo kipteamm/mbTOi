@@ -23,13 +23,19 @@ class PDA {
 public:
     explicit PDA(const std::string& file);
 
+    void print();
+    // [[nodiscard]] bool accepts(const std::string& input);
+
     [[nodiscard]] CFG toCFG();
 
 private:
+    // std::vector<std::pair<const std::string&, const std::vector<std::string>&>> transition(const std::string& state, const std::string& input, const std::string& top);
+
     std::unordered_set<std::string> states;
+    std::unordered_set<std::string> acceptingStates;
     std::unordered_set<std::string> alphabet;
     std::unordered_set<std::string> stackAlphabet;
-    std::unordered_map<std::string, std::vector<const Transition>> transitions;
+    std::unordered_map<std::string, std::vector<Transition>> transitions;
     std::string startState;
     std::stack<std::string> stack;
 };

@@ -6,8 +6,8 @@
 #include "CFG.h"
 
 #include <algorithm>
-#include <fstream>
 #include <iostream>
+#include <fstream>
 
 using json = nlohmann::json;
 

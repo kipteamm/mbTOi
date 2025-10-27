@@ -2,7 +2,8 @@
 
 
 int main() {
-    PDA pda("pda.json");
+    PDA pda("json/pda.json");
+    pda.print();
     pda.toCFG().print();
     return 0;
 }

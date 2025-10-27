@@ -51,19 +51,19 @@ build cmake_object_order_depends_target_TOi: phony || .
 
 build CMakeFiles/TOi.dir/main.cpp.obj: CXX_COMPILER__TOi_unscanned_Debug C$:/Users/ppetre/Desktop/Universiteit/MB/TOi/main.cpp || cmake_object_order_depends_target_TOi
   DEP_FILE = CMakeFiles\TOi.dir\main.cpp.obj.d
-  FLAGS = -g -std=gnu++11 -fdiagnostics-color=always
+  FLAGS = -g -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\TOi.dir
   OBJECT_FILE_DIR = CMakeFiles\TOi.dir
 
 build CMakeFiles/TOi.dir/CFG.cpp.obj: CXX_COMPILER__TOi_unscanned_Debug C$:/Users/ppetre/Desktop/Universiteit/MB/TOi/CFG.cpp || cmake_object_order_depends_target_TOi
   DEP_FILE = CMakeFiles\TOi.dir\CFG.cpp.obj.d
-  FLAGS = -g -std=gnu++11 -fdiagnostics-color=always
+  FLAGS = -g -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\TOi.dir
   OBJECT_FILE_DIR = CMakeFiles\TOi.dir
 
 build CMakeFiles/TOi.dir/PDA.cpp.obj: CXX_COMPILER__TOi_unscanned_Debug C$:/Users/ppetre/Desktop/Universiteit/MB/TOi/PDA.cpp || cmake_object_order_depends_target_TOi
   DEP_FILE = CMakeFiles\TOi.dir\PDA.cpp.obj.d
-  FLAGS = -g -std=gnu++11 -fdiagnostics-color=always
+  FLAGS = -g -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\TOi.dir
   OBJECT_FILE_DIR = CMakeFiles\TOi.dir
 
