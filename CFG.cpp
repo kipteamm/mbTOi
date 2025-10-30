@@ -127,9 +127,6 @@ void CFG::print() {
 
 
 void CFG::ll() {
-    // columns = terminals en <EOS>
-    // rows = variables
-
     std::unordered_map<std::string, std::unordered_set<std::string>> first;
     for (const std::string& terminal: this->terminals) {
         first[terminal] = {terminal};
@@ -139,15 +136,41 @@ void CFG::ll() {
     }
 
     getFirst(first);
+    std::cout << "FIRST:\n";
+    for (const auto& entry: first) {
+        if (entry.first.empty()) continue;
+        std::vector<std::string> t(entry.second.begin(), entry.second.end());
+        // Sort with empty string at the end
+        std::sort(t.begin(), t.end(), [](const std::string& a, const std::string& b) {
+            if (a.empty()) return false;  // empty string goes to end
+            if (b.empty()) return true;
+            return a < b;
+        });
 
-    std::unordered_map<std::string, std::unordered_set<std::string>> follow;
-    follow[this->startSymbol].insert("<EOS>");
-
-    for (const std::string& variable: this->variables) {
-        first[variable] = {};
+        std::cout << entry.first << ": " << "{" << t[0];
+        for (int i = 1; i < t.size(); i++) std::cout << ", " << t[i];
+        std::cout << "}\n";
     }
 
-    getFollow(follow);
+    std::unordered_map<std::string, std::unordered_set<std::string>> follow;
+    for (const std::string& variable: this->variables) {
+        follow[variable] = {};
+    }
+    follow[this->startSymbol].insert("<EOS>");
+
+    getFollow(follow, first);
+    std::cout << "FOLLOW:\n";
+    for (const auto& entry: follow) {
+        if (entry.first.empty()) continue;
+        std::vector<std::string> t(entry.second.begin(), entry.second.end());
+        std::sort(t.begin(), t.end(), [](const std::string& a, const std::string& b) {
+            return a < b;
+        });
+
+        std::cout << entry.first << ": " << "{" << t[0];
+        for (int i = 1; i < t.size(); i++) std::cout << ", " << t[i];
+        std::cout << "}\n";
+    }
 
     std::vector<std::string> columns(terminals.begin(), terminals.end());
     std::sort(columns.begin(), columns.end(), [](const std::string& a, const std::string& b) {
@@ -161,14 +184,14 @@ void CFG::ll() {
     });
 
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> table;
-    buildTable(columns, first, table);
+    buildTable(columns, first, follow, table);
 
     std::unordered_map<std::string, int> widths;
     for (const std::string& row: rows) {
         for (const std::string& column: columns) {
-            const int size = static_cast<int>(table[row][column].size() | column.size());
+            const int size = static_cast<int>(std::max(table[row][column].size(), column.size()));
 
-            if (size <= (widths[column] | 0)) continue;
+            if (size <= widths[column]) continue;
             widths[column] = size;
         }
     }
@@ -193,8 +216,12 @@ void CFG::ll() {
 
         for (const std::string& column: columns) {
             std::cout << " ";
-            std::cout << table[row][column];
-            for (int s = 0; s < widths[column] - table[row][column].size() + 2; s++) std::cout << " ";
+
+            std::string& value = table[row][column];
+            if (value == "``") value = "";
+            std::cout << value;
+
+            for (int s = 0; s < widths[column] - value.size() + 2; s++) std::cout << " ";
             std::cout << "|";
         }
     }
@@ -216,7 +243,7 @@ void CFG::getFirst(std::unordered_map<std::string, std::unordered_set<std::strin
             for (const auto& body: production.second) {
                 std::unordered_set<std::string> firstBody;
 
-                if (body.empty()) {
+                if (body.empty() || (body.size() == 1 && body[0] == "")) {
                     firstBody.insert("");
                 } else {
                     bool hasEpsilon = true;
@@ -242,7 +269,10 @@ void CFG::getFirst(std::unordered_map<std::string, std::unordered_set<std::strin
 }
 
 
-void CFG::getFollow(std::unordered_map<std::string, std::unordered_set<std::string>> &follow) {
+void CFG::getFollow(
+    std::unordered_map<std::string, std::unordered_set<std::string>> &follow,
+    std::unordered_map<std::string, std::unordered_set<std::string>> &first
+) {
     bool changed = true;
     while (changed) {
         changed = false;
@@ -259,18 +289,17 @@ void CFG::getFollow(std::unordered_map<std::string, std::unordered_set<std::stri
 
                     for (size_t j = i+1; j < body.size(); ++j) {
                         std::string sym = body[j];
-                        for (auto& s : follow[sym]) {
+
+                        for (auto& s : first[sym]) {
                             if (s != "") trailer.insert(s);
                         }
-                        if (follow[sym].count("") == 0) {
+                        if (first[sym].count("") == 0) {
                             epsilonIn = false;
                             break;
                         }
                     }
 
-                    if (i+1 == body.size() || epsilonIn) {
-                        for (auto& s : follow[head]) trailer.insert(s);
-                    }
+                    if (epsilonIn) for (auto& s : follow[head]) trailer.insert(s);
 
                     const size_t before = follow[B].size();
                     follow[B].insert(trailer.begin(), trailer.end());
@@ -285,17 +314,23 @@ void CFG::getFollow(std::unordered_map<std::string, std::unordered_set<std::stri
 void CFG::buildTable(
     const std::vector<std::string>& columns,
     std::unordered_map<std::string, std::unordered_set<std::string>> &first,
+    std::unordered_map<std::string, std::unordered_set<std::string>>& follow,
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& table
 ) {
+    // Initialize all cells to empty
     for (auto& v : variables) {
-        for (auto& c : columns) table[v][c] = "";
+        for (auto& c : columns) {
+            table[v][c] = "";
+        }
     }
 
+    // Fill in productions
     for (auto& [head, bodies] : productions) {
         for (auto& body : bodies) {
             std::unordered_set<std::string> firstBody;
-            if (body.empty()) firstBody.insert("");
-            else {
+            if (body.empty() || (body.size() == 1 && body[0] == "")) {
+                firstBody.insert("");
+            } else {
                 bool hasEpsilon = true;
                 for (auto& sym : body) {
                     for (auto& s : first[sym]) {
@@ -313,9 +348,18 @@ void CFG::buildTable(
                 if (term != "") table[head][term] = join(body);
             }
             if (firstBody.count("")) {
-                for (auto& term : first[head]) {
+                for (auto& term : follow[head]) {
                     table[head][term] = join(body);
                 }
+            }
+        }
+    }
+
+    // Mark all remaining empty cells as errors
+    for (auto& v : variables) {
+        for (auto& c : columns) {
+            if (table[v][c].empty()) {
+                table[v][c] = "<ERR>";
             }
         }
     }
@@ -330,5 +374,3 @@ std::string CFG::join(const std::vector<std::string>& vector) {
     s += "`";
     return s;
 }
-
-

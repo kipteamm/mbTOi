@@ -34,12 +34,16 @@ private:
     std::string startSymbol;
 
     void getFirst(std::unordered_map<std::string, std::unordered_set<std::string>>& first) const;
-    void getFollow(std::unordered_map<std::string, std::unordered_set<std::string>>& follow);
+    void getFollow(
+        std::unordered_map<std::string, std::unordered_set<std::string>> &follow,
+        std::unordered_map<std::string, std::unordered_set<std::string>> &first
+    );
 
     std::string join(const std::vector<std::string>& vector);
     void buildTable(
         const std::vector<std::string>& columns,
         std::unordered_map<std::string, std::unordered_set<std::string>> &first,
+        std::unordered_map<std::string, std::unordered_set<std::string>>& follow,
         std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& table
     );
 };
