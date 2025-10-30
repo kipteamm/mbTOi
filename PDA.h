@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "cfg.h"
+#include "CFG.h"
 
 
 struct Transition {

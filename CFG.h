@@ -24,12 +24,24 @@ public:
 
     void print();
 
+    void ll();
+
 private:
     std::unordered_set<std::string> variables;
     std::unordered_set<std::string> terminals;
     // VARIABLE (HEAD) -> VECTOR OF PARSEABLE STRING(S) (BODY(IES))
     std::map<std::string, std::vector<std::vector<std::string>>> productions;
     std::string startSymbol;
+
+    void getFirst(std::unordered_map<std::string, std::unordered_set<std::string>>& first) const;
+    void getFollow(std::unordered_map<std::string, std::unordered_set<std::string>>& follow);
+
+    std::string join(const std::vector<std::string>& vector);
+    void buildTable(
+        const std::vector<std::string>& columns,
+        std::unordered_map<std::string, std::unordered_set<std::string>> &first,
+        std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& table
+    );
 };
 
 

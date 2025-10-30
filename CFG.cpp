@@ -124,3 +124,193 @@ void CFG::print() {
 
     std::cout << "S = " << this->startSymbol << std::endl;
 }
+
+
+void CFG::ll() {
+    // columns = terminals en <EOS>
+    // rows = variables
+
+    std::unordered_map<std::string, std::unordered_set<std::string>> first;
+    for (const std::string& terminal: this->terminals) {
+        first[terminal] = {terminal};
+    }
+    for (const std::string& variable: this->variables) {
+        first[variable] = {};
+    }
+
+    getFirst(first);
+
+    std::unordered_map<std::string, std::unordered_set<std::string>> follow;
+    follow[this->startSymbol].insert("<EOS>");
+
+    for (const std::string& variable: this->variables) {
+        first[variable] = {};
+    }
+
+    getFollow(follow);
+
+    std::vector<std::string> columns(terminals.begin(), terminals.end());
+    std::sort(columns.begin(), columns.end(), [](const std::string& a, const std::string& b) {
+        return a < b;
+    });
+    columns.push_back("<EOS>");
+
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> table;
+    buildTable(columns, first, table);
+
+    for (int i = 0; i < columns.size(); i++) {
+        const std::string column = columns[i];
+        const int width = 4;
+    }
+
+    // std::cout << "     | ";
+    // for (const std::string& column : columns) std::cout << column << "        | ";
+    // std::cout << "\n|----|";
+    // for (size_t i = 0; i < columns.size(); ++i) std::cout << "----------|";
+    // std::cout << "\n";
+    //
+    // std::vector<std::string> rows(variables.begin(), variables.end());
+    // std::sort(rows.begin(), rows.end(), [](const std::string& a, const std::string& b) {
+    //     return a < b;
+    // });
+    //
+    // for (const std::string& row: rows) {
+    //     std::cout << "| " << row << "  | ";
+    //
+    //     for (auto& col : columns) {
+    //         std::string val = table[row][col];
+    //         if (!val.empty()) std::cout << "`" << val << "`  | ";
+    //         else std::cout << "        | ";
+    //     }
+    //
+    //     std::cout << "\n|----|";
+    //     for (size_t i = 0; i < columns.size(); ++i) std::cout << "----------|";
+    //     std::cout << "\n";
+    // }
+}
+
+
+void CFG::getFirst(std::unordered_map<std::string, std::unordered_set<std::string>> &first) const {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+
+        for (const auto& production: this->productions) {
+            for (const auto& body: production.second) {
+                std::unordered_set<std::string> firstBody;
+
+                if (body.empty()) {
+                    firstBody.insert("");
+                } else {
+                    bool hasEpsilon = true;
+                    for (auto& symbol : body) {
+                        for (auto& s : first[symbol]) {
+                            if (s != "") firstBody.insert(s);
+                        }
+                        if (first[symbol].count("") == 0) {
+                            hasEpsilon = false;
+                            break;
+                        }
+                    }
+                    if (hasEpsilon) firstBody.insert("");
+                }
+
+                const size_t before = first[production.first].size();
+                first[production.first].insert(firstBody.begin(), firstBody.end());
+
+                if (first[production.first].size() != before) changed = true;
+            }
+        }
+    }
+}
+
+
+void CFG::getFollow(std::unordered_map<std::string, std::unordered_set<std::string>> &follow) {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+
+        for (auto& [head, bodies] : productions) {
+            for (auto& body : bodies) {
+                for (size_t i = 0; i < body.size(); ++i) {
+
+                    std::string B = body[i];
+                    if (!hasVariable(B)) continue;
+
+                    std::unordered_set<std::string> trailer;
+                    bool epsilonIn = true;
+
+                    for (size_t j = i+1; j < body.size(); ++j) {
+                        std::string sym = body[j];
+                        for (auto& s : follow[sym]) {
+                            if (s != "") trailer.insert(s);
+                        }
+                        if (follow[sym].count("") == 0) {
+                            epsilonIn = false;
+                            break;
+                        }
+                    }
+
+                    if (i+1 == body.size() || epsilonIn) {
+                        for (auto& s : follow[head]) trailer.insert(s);
+                    }
+
+                    const size_t before = follow[B].size();
+                    follow[B].insert(trailer.begin(), trailer.end());
+                    if (follow[B].size() != before) changed = true;
+                }
+            }
+        }
+    }
+}
+
+
+void CFG::buildTable(
+    const std::vector<std::string>& columns,
+    std::unordered_map<std::string, std::unordered_set<std::string>> &first,
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& table
+) {
+    for (auto& v : variables) {
+        for (auto& c : columns) table[v][c] = "";
+    }
+
+    for (auto& [head, bodies] : productions) {
+        for (auto& body : bodies) {
+            std::unordered_set<std::string> firstBody;
+            if (body.empty()) firstBody.insert("");
+            else {
+                bool hasEpsilon = true;
+                for (auto& sym : body) {
+                    for (auto& s : first[sym]) {
+                        if (s != "") firstBody.insert(s);
+                    }
+                    if (first[sym].count("") == 0) {
+                        hasEpsilon = false;
+                        break;
+                    }
+                }
+                if (hasEpsilon) firstBody.insert("");
+            }
+
+            for (auto& term : firstBody) {
+                if (term != "") table[head][term] = join(body);
+            }
+            if (firstBody.count("")) {
+                for (auto& term : first[head]) {
+                    table[head][term] = join(body);
+                }
+            }
+        }
+    }
+}
+
+
+std::string CFG::join(const std::vector<std::string>& vector) {
+    if (vector.empty()) return "";
+
+    std::string s = vector[0];
+    for (size_t i = 1; i < vector.size(); ++i) s += " " + vector[i];
+    return s;
+}
+
+
