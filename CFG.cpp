@@ -153,40 +153,57 @@ void CFG::ll() {
     std::sort(columns.begin(), columns.end(), [](const std::string& a, const std::string& b) {
         return a < b;
     });
-    columns.push_back("<EOS>");
+    columns.emplace_back("<EOS>");
+
+    std::vector<std::string> rows(variables.begin(), variables.end());
+    std::sort(rows.begin(), rows.end(), [](const std::string& a, const std::string& b) {
+        return a < b;
+    });
 
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> table;
     buildTable(columns, first, table);
 
-    for (int i = 0; i < columns.size(); i++) {
-        const std::string column = columns[i];
-        const int width = 4;
+    std::unordered_map<std::string, int> widths;
+    for (const std::string& row: rows) {
+        for (const std::string& column: columns) {
+            const int size = static_cast<int>(table[row][column].size() | column.size());
+
+            if (size <= (widths[column] | 0)) continue;
+            widths[column] = size;
+        }
     }
 
-    // std::cout << "     | ";
-    // for (const std::string& column : columns) std::cout << column << "        | ";
-    // std::cout << "\n|----|";
-    // for (size_t i = 0; i < columns.size(); ++i) std::cout << "----------|";
-    // std::cout << "\n";
-    //
-    // std::vector<std::string> rows(variables.begin(), variables.end());
-    // std::sort(rows.begin(), rows.end(), [](const std::string& a, const std::string& b) {
-    //     return a < b;
-    // });
-    //
-    // for (const std::string& row: rows) {
-    //     std::cout << "| " << row << "  | ";
-    //
-    //     for (auto& col : columns) {
-    //         std::string val = table[row][col];
-    //         if (!val.empty()) std::cout << "`" << val << "`  | ";
-    //         else std::cout << "        | ";
-    //     }
-    //
-    //     std::cout << "\n|----|";
-    //     for (size_t i = 0; i < columns.size(); ++i) std::cout << "----------|";
-    //     std::cout << "\n";
-    // }
+    std::cout << "     |";
+    for (const std::string& column: columns) {
+        std::cout << " " << column;
+        for (int s = 0; s < widths[column] - column.size() + 2; s++) std::cout << " ";
+        std::cout << "|";
+    }
+
+    std::cout << "\n|----|";
+    for (const std::string& column: columns) {
+        for (int s = 0; s < widths[column] + 3; s++) std::cout << "-";
+        std::cout << "|";
+    }
+
+    for (const std::string& row: rows) {
+        std::cout << "\n| ";
+        std::cout << row;
+        std::cout << "  |";
+
+        for (const std::string& column: columns) {
+            std::cout << " ";
+            std::cout << table[row][column];
+            for (int s = 0; s < widths[column] - table[row][column].size() + 2; s++) std::cout << " ";
+            std::cout << "|";
+        }
+    }
+
+    std::cout << "\n|----|";
+    for (const std::string& column: columns) {
+        for (int s = 0; s < widths[column] + 3; s++) std::cout << "-";
+        std::cout << "|";
+    }
 }
 
 
@@ -308,8 +325,9 @@ void CFG::buildTable(
 std::string CFG::join(const std::vector<std::string>& vector) {
     if (vector.empty()) return "";
 
-    std::string s = vector[0];
+    std::string s = "`" + vector[0];
     for (size_t i = 1; i < vector.size(); ++i) s += " " + vector[i];
+    s += "`";
     return s;
 }
 
