@@ -101,8 +101,27 @@ void PDA::print() {
 }
 
 
-void cartesianProduct(const std::vector<std::string>& a, const std::vector<std::string>& b) {
+void PDA::generateRules(CFG& cfg, const std::string& from, const Transition& transition, std::vector<std::string> intermediates, const std::string& r_k, const int depth) {
+    const int k = transition.replacements.size();
+    if (k <= 1 || depth == k - 1) {
+        std::vector<std::string> rhs{transition.input};
+        std::string left = transition.toState;
 
+        for (int i = 0; i < k; ++i) {
+            std::string right = (i == k - 1) ? r_k : intermediates[i];
+            rhs.push_back("[" + left + "," + transition.replacements[i] + "," + right + "]");
+            left = right;
+        }
+
+        cfg.addProduction("[" + from + "," + transition.stackTop + "," + r_k + "]", rhs);
+        return;
+    }
+
+    for (const std::string& state: this->states) {
+        intermediates.push_back(state);
+        generateRules(cfg, from, transition, intermediates, r_k, depth + 1);
+        intermediates.pop_back();
+    }
 }
 
 
@@ -132,10 +151,14 @@ CFG PDA::toCFG() {
     this->alphabet.insert("");
     for (const auto& [from, transitions]: this->transitions) {
         for (const Transition& transition: transitions) {
-            if (transition.replacements.size() == 1 && transition.replacements[0] == "") {
+            if (transition.replacements.size() == 1 && transition.replacements[0].empty()) {
                 cfg.addProduction("[" + from + "," + transition.stackTop + "," + transition.toState + "]", {transition.input});
+                continue;
             }
 
+            for (const std::string& r_k : this->states) {
+                generateRules(cfg, from, transition, {}, r_k, 0);
+            }
         }
     }
 

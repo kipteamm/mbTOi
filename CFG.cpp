@@ -106,7 +106,7 @@ void CFG::print() {
         std::vector<std::vector<std::string>>& productions = pair.second;
 
         std::sort(productions.begin(), productions.end(), [](const std::vector<std::string>& a, const std::vector<std::string>& b) {
-            return a[0] < b[0];
+            return a < b;
         });
 
         for (const std::vector<std::string>& production: productions) {

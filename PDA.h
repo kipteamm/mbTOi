@@ -38,6 +38,8 @@ private:
     std::unordered_map<std::string, std::vector<Transition>> transitions;
     std::string startState;
     std::stack<std::string> stack;
+
+    void generateRules(CFG& cfg, const std::string& from, const Transition& transition, std::vector<std::string> intermediates, const std::string& r_k, int depth);
 };
 
 
