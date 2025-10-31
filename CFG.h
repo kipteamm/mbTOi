@@ -5,6 +5,7 @@
 #ifndef CFG_H
 #define CFG_H
 #include <unordered_set>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <map>

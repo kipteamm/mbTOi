@@ -2,7 +2,7 @@
 
 
 int main() {
-    CFG cfg("json/cfg.json");
+    CFG cfg("json/cfg2.json");
     cfg.ll();
     return 0;
 }

@@ -127,6 +127,8 @@ void CFG::print() {
 
 
 void CFG::ll() {
+    std::cout << ">>> Building LL(1) Table\n";
+
     std::unordered_map<std::string, std::unordered_set<std::string>> first;
     for (const std::string& terminal: this->terminals) {
         first[terminal] = {terminal};
@@ -136,18 +138,22 @@ void CFG::ll() {
     }
 
     getFirst(first);
-    std::cout << "FIRST:\n";
-    for (const auto& entry: first) {
-        if (entry.first.empty()) continue;
-        std::vector<std::string> t(entry.second.begin(), entry.second.end());
-        // Sort with empty string at the end
+    std::cout << " >> FIRST:\n";
+
+    std::vector<std::string> f(this->variables.begin(), this->variables.end());
+    std::sort(f.begin(), f.end(), [](const std::string& a, const std::string& b) {
+       return a < b;
+    });
+
+    for (const std::string& variable: f) {
+        std::vector<std::string> t(first[variable].begin(), first[variable].end());
         std::sort(t.begin(), t.end(), [](const std::string& a, const std::string& b) {
-            if (a.empty()) return false;  // empty string goes to end
+            if (a.empty()) return false;
             if (b.empty()) return true;
             return a < b;
         });
 
-        std::cout << entry.first << ": " << "{" << t[0];
+        std::cout << "    " << variable << ": " << "{" << t[0];
         for (int i = 1; i < t.size(); i++) std::cout << ", " << t[i];
         std::cout << "}\n";
     }
@@ -159,15 +165,16 @@ void CFG::ll() {
     follow[this->startSymbol].insert("<EOS>");
 
     getFollow(follow, first);
-    std::cout << "FOLLOW:\n";
+    std::cout << " >> FOLLOW:\n";
     for (const auto& entry: follow) {
         if (entry.first.empty()) continue;
+
         std::vector<std::string> t(entry.second.begin(), entry.second.end());
         std::sort(t.begin(), t.end(), [](const std::string& a, const std::string& b) {
             return a < b;
         });
 
-        std::cout << entry.first << ": " << "{" << t[0];
+        std::cout << "    " << entry.first << ": " << "{" << t[0];
         for (int i = 1; i < t.size(); i++) std::cout << ", " << t[i];
         std::cout << "}\n";
     }
@@ -189,12 +196,18 @@ void CFG::ll() {
     std::unordered_map<std::string, int> widths;
     for (const std::string& row: rows) {
         for (const std::string& column: columns) {
-            const int size = static_cast<int>(std::max(table[row][column].size(), column.size()));
+            std::string& value = table[row][column];
+            if (value == "``") value = "";
+
+            const int size = static_cast<int>(std::max(value.size(), column.size()));
 
             if (size <= widths[column]) continue;
             widths[column] = size;
         }
     }
+
+    std::cout << ">>> Table is built.\n";
+    std::cout << "\n-------------------------------------\n\n";
 
     std::cout << "     |";
     for (const std::string& column: columns) {
@@ -243,9 +256,8 @@ void CFG::getFirst(std::unordered_map<std::string, std::unordered_set<std::strin
             for (const auto& body: production.second) {
                 std::unordered_set<std::string> firstBody;
 
-                if (body.empty() || (body.size() == 1 && body[0] == "")) {
-                    firstBody.insert("");
-                } else {
+                if (body.empty() || (body.size() == 1 && body[0] == "")) firstBody.insert("");
+                else {
                     bool hasEpsilon = true;
                     for (auto& symbol : body) {
                         for (auto& s : first[symbol]) {
@@ -317,20 +329,17 @@ void CFG::buildTable(
     std::unordered_map<std::string, std::unordered_set<std::string>>& follow,
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& table
 ) {
-    // Initialize all cells to empty
     for (auto& v : variables) {
         for (auto& c : columns) {
             table[v][c] = "";
         }
     }
 
-    // Fill in productions
     for (auto& [head, bodies] : productions) {
         for (auto& body : bodies) {
             std::unordered_set<std::string> firstBody;
-            if (body.empty() || (body.size() == 1 && body[0] == "")) {
-                firstBody.insert("");
-            } else {
+            if (body.empty() || (body.size() == 1 && body[0] == "")) firstBody.insert("");
+            else {
                 bool hasEpsilon = true;
                 for (auto& sym : body) {
                     for (auto& s : first[sym]) {
@@ -355,7 +364,6 @@ void CFG::buildTable(
         }
     }
 
-    // Mark all remaining empty cells as errors
     for (auto& v : variables) {
         for (auto& c : columns) {
             if (table[v][c].empty()) {
